@@ -1,0 +1,274 @@
+Forecasting Financial Time Series
+
+Introduction: 
+The project's main goal is to forecast financial time series data using R and Excel. We use Excel for short-term forecasting in Part 1 of the project, and R is used for time series analysis in Part 2. The project's goal is to investigate various forecasting methods and evaluate how well they work at projecting financial asset values in the future.
+
+Part 1: Using Excel for Short-Term Forecasting
+
+Using straightforward line plots, we first visually examine the historical stock prices of Apple (AAPL) and Honeywell (HON) in Part 1. We can find any underlying trends, seasonal patterns, or anomalous behaviors in the data by using these visualizations. We then use exponential smoothing techniques to predict the prices of stocks for the upcoming period.
+We experiment with different values of the smoothing parameter (α) to find the best values that yield the most accurate forecasts for each stock. Furthermore, we study the effect of changing the trend parameter (β) on forecast accuracy and carry out adjusted exponential smoothing.
+
+Section 2: Time Series with R
+
+We move on to using R to perform time series analysis in Part 2. Using R packages like quantmod, we are able to obtain five years' worth of historical stock price data for HON and AAPL. In order to capture any underlying temporal patterns and seasonality, we then fit ARIMA models to the stock prices of AAPL and HON. To evaluate the time series data's stability, stationarity tests are run. Furthermore, we use auto.arima() or Time-series models are automatically chosen and fitted to stock prices using Holt-Winters functions. Using similar methods, we extend our analysis to price prediction for dry wine.
+
+This project aims to provide a thorough understanding of short-term forecasting techniques for financial time series data by combining Excel and R methodologies. We acquire valuable skills for making educated forecasts in real-world scenarios and obtain insights into the dynamics of financial markets through practical exploration and analysis.
+
+PART 1:
+
+
+
+
+
+
+
+
+PART 2:
+
+Loading required libraries
+```{r}
+library(zoo)
+library(xts)
+library(quantmod)
+library(forecast)
+library(tseries)
+library(readr)
+library(dplyr)
+dry_wine <- read_csv("dry_wine.csv")
+View(dry_wine)
+```
+
+TASK 1:Downloading 5-year worth of data for HON and AAPL 
+```{r, Task1}
+getSymbols("AAPL", from = Sys.Date() - 5*365)
+getSymbols("HON", from = Sys.Date() - 5*365)
+# Check structure of AAPL data
+str(AAPL)
+
+# Check structure of HON data
+str(HON)
+# Plot AAPL closing prices
+plot(Cl(AAPL), main = "AAPL Closing Prices", ylab = "Price", xlab = "Date")
+
+# Plot HON closing prices
+plot(Cl(HON), main = "HON Closing Prices", ylab = "Price", xlab = "Date")
+
+```
+
+TASK 2:Fitting an AR(1) time-series model to HON and AAPL
+
+We can take the following actions to fit an AR(1) time-series model to HON and AAPL, plot the actual series alongside forecasts, and then analyze the data:
+
+Fit AR(1) Model: To fit an ARIMA model with an AR(1) structure to the closing prices of HON and AAPL, use the arima() function.
+
+Create Forecasts: To create forecasts for the upcoming few months, use the forecast() function.
+
+Plot Actual Series and Forecasts: To plot the actual series and the forecasts, use the plot() function.
+```{r,task2}
+# Fit AR(1) model for HON
+hon_ar1 <- arima(HON$HON.Close, order = c(1, 0, 0))
+
+# Generate forecasts for HON
+hon_forecast <- forecast(hon_ar1, h = 6)  # Forecast for 6 months
+
+# Plot actual series and forecasts for HON
+plot(hon_forecast, main = "HON AR(1) Forecast", xlab = "Time", ylab = "Price")
+
+# Fit AR(1) model for AAPL
+aapl_ar1 <- arima(AAPL$AAPL.Close, order = c(1, 0, 0))
+
+# Generate forecasts for AAPL
+aapl_forecast <- forecast(aapl_ar1, h = 6)  # Forecast for 6 months
+
+# Plot actual series and forecasts for AAPL
+plot(aapl_forecast, main = "AAPL AR(1) Forecast", xlab = "Time", ylab = "Price")
+
+```
+Observation:We fit the closing prices of AAPL and HON using an ARIMA model with an AR(1) structure (order = c(1, 0, 0)).
+We produce projections for the ensuing six months, which you are free to modify to suit your needs.
+Using the plot() function, we plot the actual series alongside the forecasts.
+As a result, the actual series and the forecasts will be shown in two distinct plots, one for AAPL and one for HON. Adapt the parameters to your analysis as necessary. 
+
+TASK 3a:Augmented Dickey-Fuller (ADF) Test to determine whether the HON and AAPL time series are stationary or not.
+
+```{r,Task3a}
+# Perform Augmented Dickey-Fuller test for HON
+adf_hon <- adf.test(HON$HON.Close)
+print(adf_hon)
+
+# Perform Augmented Dickey-Fuller test for AAPL
+adf_aapl <- adf.test(AAPL$AAPL.Close)
+print(adf_aapl)
+
+```
+Observation: The stationarity of the HON and AAPL time series is indicated by the results of the Augmented Dickey-Fuller (ADF) tests.
+
+Regarding HON:
+
+Dickey-Fuller statistic (p-value = 0.404): -2.4119
+Regarding AAPL:
+
+Dickey-Fuller statistic (p-value = 0.5037): -2.1762.
+The p-values in both situations are higher than the significance level (e.g., 0.05), indicating that the null hypothesis is not successfully rejected. As a result, the ADF test's null hypothesis cannot be rejected because there is insufficient data, suggesting that the time series are probably not stationary.
+
+TASK 3b:Kwiatkowski-Phillips-Schmidt-Shin (KPSS) Test:
+```{r, Task3b}
+# Perform KPSS test for HON
+kpss_hon <- kpss.test(HON$HON.Close)
+print(kpss_hon)
+
+# Perform KPSS test for AAPL
+kpss_aapl <- kpss.test(AAPL$AAPL.Close)
+print(kpss_aapl)
+
+```
+Observation:
+KPSS statistic: 4.9435; p-value: 0.01; note that the p-value may be less than what is printed.
+Regarding AAPL:
+
+KPSS statistic: 13.753; p-value: 0.01; note that the p-value may be less than what is printed.
+The p-values in both situations are less than the significance level (e.g., 0.05), indicating that the alternative hypothesis should be accepted rather than the null hypothesis of the KPSS test, which would imply that the time series are probably non-stationary at the level.
+
+If the ADF test is combined with the KPSS test results and fails to reject the null hypothesis, it indicates that there may be a unit root or trend in the data, which would indicate non-stationarity.
+
+Thus, we can infer that the HON and AAPL time series are probably non-stationary based on the outcomes of both tests.
+
+TASK 4:Using auto.arima( ) or Holt-Winters functions to fit a time-series model.
+```{r,Task4}
+library(forecast)
+
+# Fit ARIMA model for HON using auto.arima
+hon_arima <- auto.arima(HON$HON.Close)
+print(hon_arima)
+
+# Generate forecasts for HON
+hon_forecast <- forecast(hon_arima, h = 6)
+
+# Plot actual series and forecasts for HON
+plot(hon_forecast, main = "HON ARIMA Forecast", xlab = "Time", ylab = "Price")
+
+# Fit ARIMA model for AAPL using auto.arima
+aapl_arima <- auto.arima(AAPL$AAPL.Close)
+print(aapl_arima)
+
+# Generate forecasts for AAPL
+aapl_forecast <- forecast(aapl_arima, h = 6)
+
+# Plot actual series and forecasts for AAPL
+plot(aapl_forecast, main = "AAPL ARIMA Forecast", xlab = "Time", ylab = "Price")
+
+```
+Observation: For the time series data from the HON and AAPL, the auto.arima() function has automatically chosen ARIMA(0,1,0). Here is the meaning of each component of the output:
+
+Regarding HON: ARIMA(0,1,0) denotes that the model has differencing of order 1 (d=1) but neither autoregressive (AR) nor moving average (MA) terms.
+The value of log likelihood is -3118.98.
+6239.96 is the Akaike Information Criterion (AIC) value.
+6239.96 is the corrected Akaike Information Criterion (AICc) value.
+6245.1 is the Bayesian Information Criterion (BIC) value.
+
+For AAPL: ARGIMA(0,1,0) with drift denotes the absence of any autoregressive (AR) or moving average (MA) terms, but the inclusion of a drift term in addition to differencing of order 1 (d=1).
+The drift term has a coefficient of 0.0988 and a standard error of 0.0686.
+The AIC value is 5800.8, the AICc value is 5800.81, and the log likelihood value is -2898.4.
+Value of BIC is 5811.07.
+The order of differencing (d), autoregressive terms (p), moving average terms (q), drift term (if applicable), and the related model evaluation criteria (log likelihood, AIC, AICc, BIC) are among the details about the chosen ARIMA models that are provided by these results.
+
+With these models, we can now produce forecasts and plot the actual series alongside the predictions.
+
+TASK 5:The auto.arima( ) or Holt-Winters time-series forecasting using the dry wine prices from the given dataset.
+the data frame contains two variables: "X" and "x". Assuming that "X" represents the index or row number, and "x" represents the dry wine prices, we can proceed to create a time series object with this data.
+```{r,Task5}
+# Convert the data to a time series object
+dry_wine_ts <- ts(dry_wine$x, frequency = 12)  # Assuming monthly data
+
+# Fit ARIMA model using auto.arima
+dry_wine_arima <- auto.arima(dry_wine_ts)
+print(dry_wine_arima)
+
+# Generate forecasts
+dry_wine_forecast <- forecast(dry_wine_arima, h = 12)  # Forecast for the next 12 months
+
+# Plot actual series and forecasts
+plot(dry_wine_forecast, main = "Dry Wine Price Forecast", xlab = "Time", ylab = "Price")
+
+```
+Observation:
+For the dry wine time series data, auto.arima() chose the ARIMA model ARIMA(1,1,0)(0,1,1)[12].
+ARIMA(1,1,0)(0,1,1)[12]: This is an illustration of the chosen ARIMA model. It has a seasonal period of 12 (assuming monthly data), one seasonal moving average term (SMA), and one autoregressive term (AR).
+
+Coefficients: The SMA and AR terms' estimated coefficients are given. The SMA coefficient (sma1) is roughly -0.6416 in this instance, and the AR coefficient (ar1) is roughly -0.4652.
+
+The standard errors of the estimated coefficients are represented by the standard errors (s.e.).
+
+sigma^2: This is the residuals' estimated variance (error term).
+
+Log likelihood: The model's fit to the data is indicated by the log-likelihood value. It is about -939.84 in this instance.
+
+AIC, AICc, BIC: These are information criteria used for model selection. Lower values indicate a better fit. The values provided are AIC (Akaike Information Criterion), AICc (corrected Akaike Information Criterion), and BIC (Bayesian Information Criterion).
+
+TASK 5a: Generating forecasts for the next period and plot the actual series along with the forecasts. 
+```{r,Task5a}
+# Generate forecasts
+dry_wine_forecast <- forecast(dry_wine_arima, h = 12)  # Forecast for the next 12 months
+
+# Plot actual series and forecasts
+plot(dry_wine_forecast, main = "Dry Wine Price Forecast", xlab = "Time", ylab = "Price")
+
+
+```
+Obseravtion: Forecasting: Using the chosen ARIMA model, projections have been created for the upcoming 12 months.
+
+Plot: The plot shows the actual dry wine price series for the upcoming year in addition to the forecasts. Time is represented by the x-axis, and the cost of dry wine is represented by the y-axis.
+
+Interpretation: By looking at the plot, we can see how well the predicted values match the data from the past. This enables us to assess the forecasting model's accuracy and spot any possible trends or patterns in the data.
+
+In general, these observations shed light on the model selection procedure, the calculated coefficients, and the precision of the projections, which aids in informing present and future planning and decision-making regarding the price of dry wine.
+
+TASK 6a:Summary of the above two forecasting.
+
+a. HON and AAPL Time Series Forecasting:
+The optimal ARIMA model for forecasting was automatically chosen for both the HON and AAPL stocks using the auto.arima() function. ARIMA(0,1,0) with drift for AAPL and ARIMA(0,1,0) for HON were the models that were chosen.
+
+The ARIMA(0,1,0) model suggests that a single difference is needed to attain stationarity for the stock prices of HON. This model's AIC value of 6239.96 indicates that, in comparison to other models, it is comparatively less parsimonious but nevertheless offers a good fit to the data.
+
+In addition to differencing once, the ARIMA(0,1,0) model with drift for AAPL incorporates a drift term. In comparison to the HON model, this one fits slightly better, as indicated by its AIC value of 5800.8.
+
+b. Dry wine price time series forecasting:
+The auto.arima() function was once more used to choose the optimal ARIMA model for forecasting the dry wine prices dataset. Model ARIMA(1,1,0)(0,1,1) was the one chosen[12].
+
+The autoregressive and seasonal moving average terms included in the selected ARIMA model for dry wine prices imply the existence of both temporal and seasonal patterns in the data. This model has an AIC value of 1885.68, which suggests a comparatively good fit to the data.
+
+In contrast:
+
+Model Selection: Based on the unique properties of each of the three datasets, the auto.arima() function automatically chose a variety of ARIMA models for each dataset. Simple ARIMA(0,1,0) models performed the best in representing HON and AAPL stocks, whereas a more complex ARIMA(1,1,0)(0,1,1)[12] model was needed for the dry wine prices dataset.
+
+Evaluation of the Model: The AIC values for the chosen models differed between datasets, with AAPL (5800.8) and HON (6239.96) having higher values than the prices of dry wine (1885.68). In comparison to the models for HON and AAPL, the ARIMA model for dry wine prices appears to have performed reasonably well, as indicated by lower AIC values, which signify better model fit.
+
+Forecasting: ARIMA models were used to forecast all three datasets; however, due to variations in data characteristics and model complexity, the forecasting results may differ. It is imperative to take into account the particular context and prerequisites when analyzing and contrasting forecasting outcomes across various datasets.
+
+In conclusion, the comparison emphasizes how crucial it is to choose models that are suitable for each dataset and assess each one's performance according to model fit and forecasting accuracy. 
+Conclusion and Improvations:
+PART 1:
+
+
+
+
+
+PART 2:
+The inherent variations in the datasets and the features of the time series data under analysis lead to different conclusions. The selection of the best forecasting model and technique can be influenced by the distinct patterns, trends, and seasonality that each dataset may display.
+
+Preferred Method: The best approach will vary depending on the goals of the analysis and the particulars of the dataset. Because auto.arima() can choose the optimal ARIMA model automatically based on statistical criteria, it may be the better option in some situations. In other situations, Holt-Winters smoothing may be the better option due to its ease of use and efficiency in identifying patterns and seasonality in the data.
+
+What I Acquired:
+This analysis provides several important takeaways:
+Data exploration: Before choosing a forecasting method, it is crucial to fully examine and comprehend the characteristics of the data.
+Model Selection: Based on the distinct patterns and traits found in the data, the best forecasting model should be chosen.
+Evaluation Metrics: When comparing various forecasting techniques, it is important to take into account the various evaluation metrics (such as AIC, AICc, and BIC) that offer insights into the goodness-of-fit of models.
+Context Matters: Depending on the analysis's needs and context, a different forecasting technique may be chosen.
+
+Opportunities for Improvement To enhance the analysis:
+Sturdy Modeling Investigate alternative models and forecasting techniques to guarantee forecast accuracy and robustness.
+Add Exogenous Variables: To increase forecasting accuracy, take into account adding more exogenous variables or features that could affect the time series data.
+Cross-Validation: To evaluate the effectiveness of the chosen models and confirm their forecasting accuracy, apply cross-validation techniques.
+Model Interpretation: Give a more thorough analysis of the chosen models' implications for making decisions.
+Sensitivity Analysis: To assess how various model assumptions and parameters affect the forecasting outcomes, perform sensitivity analysis.
+These enhancements can make the analysis more thorough, reliable, and instructive, which will improve forecasting accuracy and decision-making.
